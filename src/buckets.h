@@ -49,7 +49,7 @@ int force(ds* d, size_t low, size_t* end) {
 	}
 	d->len -= off;
 	*end -= off;
-	if (acc.l.e || acc.r.e) {
+	if (acc.l.e | acc.r.e) {
 		d->start[d->len++] = acc;
 		(*end)++;
 	}

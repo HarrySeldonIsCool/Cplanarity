@@ -28,7 +28,7 @@ typedef struct {
 #define FORV(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next) //predefine A
 #define FORVC(A, E) for (;E && ((A = E->v) || 1); E = E->next) //predeclare A and E
 #define FORVP(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = &CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next)
-#define ok )) return 0
+#define ok )) {return 0;}
 #define is if (!(
 #define kk ?1:exit(__LINE__)
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
@@ -100,16 +100,16 @@ next:
 	}
 }
 
-void isort(size_t arr[], size_t len, dlow low[]) {	//insertion sort for vertices (should switch to something faster (heap sort) when i can)
+void isort(size_t arr[], size_t len, dlow low[], size_t v0) {	//insertion sort for vertices (should switch to something faster (heap sort) when i can)
 	for (size_t i = 1; i < len; i++) {
 		size_t v = arr[i];
 		int j = i-1;
 		for (;j >= 0; j--) {
-			size_t a = v < i ? v : low[v].a;
-			size_t b = arr[j] < i ? arr[j] : low[arr[j]].a;
+			size_t a = v < v0 ? v : low[v].a;
+			size_t b = arr[j] < v0 ? arr[j] : low[arr[j]].a;
 			if (a > b) break;
 			if (a == b) {
-				if (v < i || arr[j] < i) {
+				if (v < v0 || arr[j] < v0) {
 					if (v > arr[j]) break;
 				}
 				else {
@@ -130,7 +130,7 @@ void sortg(graph* g, dlow low[], size_t buff[]) {
 		FORV(v2, g->v[v]) {
 			buff[i++] = v2;
 		}
-		isort(buff, i, low);
+		isort(buff, i, low, v);
 		i = 0;
 		size_t* a;
 		FORVP(a, g->v[v]) {
@@ -187,8 +187,8 @@ int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
 	else {
 		size_t v2 = g->v[v].start->v;
 		GETDS(v2, d->v[v]);
-		is force(&d->v[v], v2 < v ? v2 : low[v2].b, &d->end) ok;
 		edge* e = g->v[v].start->next;
+		is force(&d->v[v], e->v < v ? e->v : low[e->v].a, &d->end) ok;
 		FORVC(v2, e) {
 			ds d2;
 			GETDS(v2, d2);
