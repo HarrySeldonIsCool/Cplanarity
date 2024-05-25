@@ -24,7 +24,7 @@ typedef struct {
 } dds;
 
 int force(ds* d, size_t low, size_t* end) {
-	uint64_t mask = low+1 > 64 ? 0 : ~0ll << low+1;
+	uint64_t mask = low+1 > 64 ? 0 : ~0ull << low+1;
 	size_t off = 0;
 	constraint acc = {(eset){0, 69}, (eset){0, 69}};
 	for (size_t i = 0; i < d->len; i++) {
@@ -104,7 +104,7 @@ int add(ds* d, ds* d2, size_t* end) {
 }
 
 void limit(ds* d, size_t x, size_t* end) {
-	uint64_t mask = (1<<x)-1;
+	uint64_t mask = (1ull<<x)-1;
 	size_t off = 0;
 	for (size_t i = 0; i < d->len; i++) {
 		d->start[i].r.e &= mask;

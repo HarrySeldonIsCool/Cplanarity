@@ -67,7 +67,7 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 	for (size_t i = 0; i < g->n; i++) {
 		if (~exp & 1ull << i) {
 			size_t edges = 0;
-			size_t otop = top;
+			int otop = top;
 			size_t v = i;
 			ord[v] = ++top;
 			g2->v[top].par = 0;
@@ -77,7 +77,7 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 				size_t t = ord[v];
 				FORVC(v2, elp[v]) {
 					size_t tx = ord[v2];
-					if (1 << v2 & exp) {
+					if (1ull << v2 & exp) {
 						if (tx < g2->v[t].par) {
 							pushg(g2, t, tx);
 							edges++;
@@ -88,7 +88,7 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 						}
 					}
 					else {
-						exp |= 1 << v2;
+						exp |= 1ull << v2;
 						g->v[v2].par = v;
 						ord[v2] = ++top;
 						g2->v[top].par = t;
@@ -99,7 +99,7 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 						goto next;
 					}
 				}
-				if (!v) break;
+				if (v == i) break;
 				v = g->v[v].par;	//backtrack
 				size_t tp = ord[v];
 				if (low[t].a < low[tp].b && low[t].a != low[tp].a) {
@@ -109,8 +109,9 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 				low[tp].b = MIN(low[tp].b, low[t].b);
 next:
 			}
-			if (edges > 3*(top-otop-2) && top-otop > 2) return 0;
-			if (otop+1 && top-otop+3 <= edges && top-otop >= 5 && edges >= 9) pushg(g2, 0, otop+1);
+			int n = top-otop;
+			if (edges > 3*(n-2) && n > 2) return 0;
+			if (otop+1 && n+3 <= edges && n >= 5 && edges >= 9) pushg(g2, 0, otop+1);
 		}
 	}
 	return 1;
@@ -157,7 +158,7 @@ void sortg(graph* g, dlow low[], size_t buff[]) {
 
 int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
 #define GETDS(X, Y) if ((X) < v) { \
-	d->c[d->end++] = (constraint){1ll << (X), (X), 0, 69}; \
+	d->c[d->end++] = (constraint){1ull << (X), (X), 0, 69}; \
 	Y = (ds){d->c+d->end-1, 1, (X)};\
 	}\
 	else {\
