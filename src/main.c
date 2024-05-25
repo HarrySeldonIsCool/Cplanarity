@@ -305,19 +305,13 @@ int main() {
 		.v=malloc(n*sizeof(ds)),
 		.end=0
 	};
-	ds* elp2 = calloc(n, sizeof(ds));
 	while (!feof(stdin)) {
 		memset(s, 0, n*(n-1)/12+3);
-		memset(g.e, 0, sizeof(edge)*(6*n-12));
 		memset(g.v, 0, sizeof(vertex)*n);
 		g.elen = 0;
 		if (!getg(stdin, &g, s, n)) goto next;
-		memset(g2.e, 0, sizeof(edge)*(6*n-12));
 		memset(g2.v, 0, sizeof(vertex)*n);
 		g2.elen = 0;
-		memset(low, 0, sizeof(dlow)*n);
-		memset(ord, 0, sizeof(size_t)*n);
-		memset(elp, 0, sizeof(edge*)*n);
 		if (!dfs(&g, low, ord, &g2, elp)) goto next;
 		sortg(&g2, low, ord);
 		memset(dss.c, 0, sizeof(constraint)*(3*n-6));
