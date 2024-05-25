@@ -26,7 +26,7 @@ typedef struct {
 #define CONCI(A, B) A ## B
 #define CONCAT(A, B) CONCI(A, B)
 #define FORV(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next) //predefine A
-#define FORVC(A, E) for (;E && ((A = E->v) || 1); E = E->next) //predeclare A and E
+#define FORVC(A, E) for (;E && ((A = E->v) || 1); E = E->next) //prefine A and E
 #define FORVP(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = &CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next)
 #define ok )) {return 0;}
 #define is if (!(
@@ -170,7 +170,6 @@ int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
 	}
 	else if (g->v[v].start->next == NULL) {
 		GETDS(g->v[v].start->v, d->v[v]);
-		limit(&d->v[v], g->v[v].par, &d->end);
 	}
 	else {
 		size_t v2 = g->v[v].start->v;
@@ -187,6 +186,76 @@ int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
 	limit(&d->v[v], g->v[v].par, &d->end);
 	return 1;
 #undef GETDS
+}
+
+int planarity1(graph* g, dds* d, dlow low[], edge* elp[]) {	//yep goto state machine (a bit simpler then the previous)
+	size_t v = 0;
+	while (1) {
+		size_t v2;
+		if (g->v[v].start == NULL) {
+			d->v[v] = (ds){d->c+d->end, 0, 69};
+			goto back;
+		}
+		else if (g->v[v].start->next == NULL){
+			v2 = g->v[v].start->v;
+			if (v2 < v) {
+				d->c[d->end++] = (constraint){1ull << v2, v2, 0, 69};
+				d->v[v] = (ds){d->c+d->end-1, 1, v2};
+				goto back;
+			}
+			else if (d->v[v2].start != NULL) {
+				d->v[v] = d->v[v2];
+				goto back;
+			}
+			else {
+				v = v2;
+				goto forw;
+			}
+		}
+		else {
+			ds d2;
+			if (elp[v] == g->v[v].start) {
+				d->v[v] = d->v[elp[v]->v];
+				goto sloop;
+			}
+			if (elp[v]) goto loop;
+			v2 = g->v[v].start->v;
+			if (v2 < v) {
+				d->c[d->end++] = (constraint){1ull << v2, v2, 0, 69};
+				d->v[v] = (ds){d->c+d->end-1, 1, v2};
+			}
+			else {
+				elp[v] = g->v[v].start;
+				v = v2;
+				goto forw;
+			}
+sloop:
+			elp[v] = g->v[v].start->next;
+			is force(&d->v[v], elp[v]->v < v ? elp[v]->v : low[elp[v]->v].a, &d->end) ok;
+			FORVC(v2, elp[v]) {
+				if (v2 < v) {
+					d->c[d->end++] = (constraint){1ull << v2, v2, 0, 69};
+					d2 = (ds){d->c+d->end-1, 1, v2};
+				}
+				else {
+					v = v2;
+					goto forw;
+loop:
+					v2 = elp[v]->v;
+					d2 = d->v[v2];
+				}
+				is force(&d2, d->v[v].l, &d->end) ok;
+				is add(&d->v[v], &d2, &d->end) ok;
+			}
+			goto back;
+		}
+back:
+		limit(&d->v[v], g->v[v].par, &d->end);
+		if (!v) break;
+		v = g->v[v].par;
+forw:
+	}
+	return 1;
 }
 
 int getg(FILE* fin, graph* g, char* s, int n) {
@@ -254,7 +323,8 @@ int main() {
 		memset(dss.c, 0, sizeof(constraint)*(3*n-6));
 		memset(dss.v, 0, sizeof(ds)*n);
 		dss.end = 0;
-		if (planarity0(&g2, &dss, 0, low)) {
+		memset(elp, 0, sizeof(edge*)*n);
+		if (planarity1(&g2, &dss, low, elp)) {
 			printf("%c%s\n", n+63, s);
 		}
 next:
