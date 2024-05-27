@@ -1,6 +1,6 @@
 objects = bin/main.o
 binout = bin/prot
-flags = -ggdb
+flags = -ggdb -O3
 comp = gcc
 $(binout) : $(objects)
 	$(comp) $(objects) $(flags) -o $(binout)
