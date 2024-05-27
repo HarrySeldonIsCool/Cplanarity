@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <signal.h>
 #include "buckets.h"
 
 typedef struct edge_s {
@@ -45,13 +44,6 @@ typedef struct {
 } dlow;
 
 #include "printing.h"
-
-static volatile char sdump[100];
-
-void dump_on_sig(int dum) {
-	eprintf("%s", sdump);
-	raise(SIGABRT);
-}
 
 //abusing the parent field in g - "stackless"
 //g2 is directed tree with set parents
@@ -260,19 +252,23 @@ forw:
 
 int getg(FILE* fin, graph* g, char* s, int n) {
 	assert(fscanf(fin, "%s ", s));
-	sprintf(sdump, "%c%s\n", n+63, s);
-	size_t x = 0;
-	for (size_t i = 0; i < n; i++) {
-		for (size_t j = 0; j < i; j++) {
-			if (s[x/6]-63 << x%6 & 0x20) {
-				if (g->elen >= 6*n-12) return 0;
+	size_t plen = 6*n-12;
+	size_t i = 0, j = 0;
+	for (size_t x = 0; ; x++) {
+		for (size_t y = 0; y < 6; y++) {
+			if (i == j) {
+				i++;
+				if (i == n) return 1;
+				j = 0;
+			}
+			if (s[x]-63 << y & 0x20) {
 				pushg(g, i, j);
 				pushg(g, j, i);
 			}
-			x++;
+			if (g->elen > plen) return 0;
+			j++;
 		}
 	}
-	return 1;
 }
 
 int getn(FILE* fin) {
@@ -282,7 +278,6 @@ int getn(FILE* fin) {
 }
 
 int main() {
-	signal(SIGSEGV, dump_on_sig);
 	int n = getn(stdin);
 	char* s = malloc(n*(n-1)/12+3);
 	graph g = {
