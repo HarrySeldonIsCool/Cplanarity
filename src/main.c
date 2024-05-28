@@ -255,18 +255,20 @@ int getg(FILE* fin, graph* g, char* s, int n) {
 	size_t plen = 6*n-12;
 	size_t i = 0, j = 0;
 	for (size_t x = 0; ; x++) {
+		char c = s[x]-63;
 		for (size_t y = 0; y < 6; y++) {
 			if (i == j) {
 				i++;
 				if (i == n) return 1;
 				j = 0;
 			}
-			if (s[x]-63 << y & 0x20) {
+			if (c & 0x20) {
 				pushg(g, i, j);
 				pushg(g, j, i);
 			}
 			if (g->elen > plen) return 0;
 			j++;
+			c <<= 1;
 		}
 	}
 }
