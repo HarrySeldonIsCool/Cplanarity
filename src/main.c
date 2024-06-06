@@ -251,7 +251,7 @@ forw:
 }
 
 int getg(FILE* fin, graph* g, char* s, int n) {
-	assert(fscanf(fin, "%s ", s));
+	assert(fgets(s, n*(n-1)/12+4, fin));
 	size_t plen = 6*n-12;
 	size_t i = 0, j = 0;
 	for (size_t x = 0; ; x++) {
@@ -281,7 +281,7 @@ int getn(FILE* fin) {
 
 int main() {
 	int n = getn(stdin);
-	char* s = malloc(n*(n-1)/12+3);
+	char* s = malloc(n*(n-1)/12+4);
 	graph g = {
 		malloc((6*n-12)*sizeof(edge)),
 		0,
@@ -303,7 +303,6 @@ int main() {
 		.end=0
 	};
 	while (!feof(stdin)) {
-		memset(s, 0, n*(n-1)/12+3);
 		memset(g.v, 0, sizeof(vertex)*n);
 		g.elen = 0;
 		if (!getg(stdin, &g, s, n)) goto next;
@@ -316,10 +315,9 @@ int main() {
 		dss.end = 0;
 		memset(elp, 0, sizeof(edge*)*n);
 		if (planarity1(&g2, &dss, low, elp)) {
-			printf("%c%s\n", n+63, s);
+			printf("%c%s", n+63, s);
 		}
 next:
 		if (feof(stdin)) break;
-		assert(n == getn(stdin));
 	}
 }
