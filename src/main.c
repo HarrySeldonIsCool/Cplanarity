@@ -319,5 +319,6 @@ int main() {
 		}
 next:
 		if (feof(stdin)) break;
+		getn(stdin);
 	}
 }
