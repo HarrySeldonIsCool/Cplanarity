@@ -250,12 +250,26 @@ forw:
 	return 1;
 }
 
+int counte(char* s, int len) {
+	uint64_t* s2 = (uint64_t*)s;
+	int e = 0;
+	for (size_t i = 0; 8*i < len; i++) {
+		uint64_t x = s2[i]-0x3f3f3f3f3f3f3f3full;
+		while (x) {
+			x &= x-1;
+			e++;
+		}
+	}
+	return e;
+}
+
 int getg(FILE* fin, graph* g, char* s, int n) {
-	assert(fgets(s, n*(n-1)/12+4, fin));
-	size_t plen = 6*n-12;
+	int len = (n*(n-1)/2+5)/6;
+	assert(fgets(s, n*(n-1)/12+10, fin));
+	if (counte(s, len) > 3*n-6) return 0;
 	size_t i = 0, j = 0;
 	for (size_t x = 0; ; x++) {
-		char c = s[x]-63;
+		char c = s[x]-0x3f;
 		for (size_t y = 0; y < 6; y++) {
 			if (i == j) {
 				i++;
@@ -266,7 +280,6 @@ int getg(FILE* fin, graph* g, char* s, int n) {
 				pushg(g, i, j);
 				pushg(g, j, i);
 			}
-			if (g->elen > plen) return 0;
 			j++;
 			c <<= 1;
 		}
@@ -281,7 +294,7 @@ int getn(FILE* fin) {
 
 int main() {
 	int n = getn(stdin);
-	char* s = malloc(n*(n-1)/12+4);
+	char* s = malloc(n*(n-1)/12+10);
 	graph g = {
 		malloc((6*n-12)*sizeof(edge)),
 		0,
@@ -305,6 +318,7 @@ int main() {
 	while (!feof(stdin)) {
 		memset(g.v, 0, sizeof(vertex)*n);
 		g.elen = 0;
+		memset(s, 0, n*(n-1)/12+10);
 		if (!getg(stdin, &g, s, n)) goto next;
 		memset(g2.v, 0, sizeof(vertex)*n);
 		g2.elen = 0;
