@@ -273,7 +273,8 @@ int counte(char* s, int len) {
 
 int getg(FILE* fin, graph* g, char* s, int n) {
 	int len = (n*(n-1)/2+5)/6;
-	assert(fgets(s, n*(n-1)/12+10, fin));
+	assert(fgets(s, len+2+7, fin));
+	s[len] = 0;
 	if (counte(s, len) > 3*n-6) return 0;
 	//handle first character
 	char c = s[0]-0x3f;
@@ -329,7 +330,9 @@ int getn(FILE* fin) {
 
 int main() {
 	int n = getn(stdin);
-	char* s = malloc(n*(n-1)/12+10);
+	size_t len = (n*(n-1)/2+5)/6;
+	char* s = malloc(len+2+7);
+	memset(s+len, 0, 8);
 	graph g = {
 		malloc((6*n-12)*sizeof(edge)),
 		0,
@@ -337,7 +340,7 @@ int main() {
 		n
 	};
 	graph g2 = {
-		malloc((6*n-12)*sizeof(edge)),
+		malloc((3*n-6)*sizeof(edge)),
 		0,
 		malloc(n*sizeof(vertex)),
 		n
@@ -353,7 +356,6 @@ int main() {
 	while (!feof(stdin)) {
 		memset(g.v, 0, sizeof(vertex)*n);
 		g.elen = 0;
-		memset(s, 0, n*(n-1)/12+10);
 		if (!getg(stdin, &g, s, n)) goto next;
 		memset(g2.v, 0, sizeof(vertex)*n);
 		g2.elen = 0;
@@ -364,7 +366,7 @@ int main() {
 		dss.end = 0;
 		memset(elp, 0, sizeof(edge*)*n);
 		if (planarity1(&g2, &dss, low, elp)) {
-			printf("%c%s", n+63, s);
+			printf("%c%s\n", n+63, s);
 		}
 next:
 		if (feof(stdin)) break;
