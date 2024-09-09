@@ -22,6 +22,11 @@ typedef struct {
 	size_t n;
 } graph;
 
+typedef struct {
+	uint64_t v[64];
+	size_t n;
+} sgraph;
+
 #define CONCI(A, B) A ## B
 #define CONCAT(A, B) CONCI(A, B)
 #define FORV(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next) //predefine A
@@ -36,15 +41,6 @@ void pushg(graph* g, size_t v, size_t v2) {
 	g->e[g->elen] = (edge){g->v[v].start, v2};
 	g->v[v].start = &g->e[g->elen++];
 	return;
-}
-
-int fastlog(uint64_t x) {
-	union {
-		uint64_t b;
-		double d;
-	} b;
-	b.d = (double)x;
-	return (b.b >> 52) - 0x3ff;
 }
 
 typedef struct {
@@ -66,7 +62,7 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 	int top = -1;
 	uint64_t nexp = (1ull << g->n) - 1;
 	while (nexp) {
-		size_t i = fastlog(nexp & -nexp);
+		size_t i = __builtin_ctz(nexp);
 		nexp &= nexp-1;
 		size_t edges = 0;
 		int otop = top;
@@ -90,6 +86,10 @@ int dfs(graph* g, dlow low[], size_t ord[], graph* g2, edge** elp) {
 				}
 				else {
 					nexp ^= 1ull << v2;
+					if (g->v[v2].start->next == NULL) {
+						g2->n--;
+						continue;
+					}
 					g->v[v2].par = v;
 					ord[v2] = ++top;
 					g2->v[top].par = t;
@@ -115,6 +115,37 @@ next:
 		if (otop+1 && n+3 <= edges && n >= 5 && edges >= 9) pushg(g2, 0, otop+1);
 	}
 	return 1;
+}
+
+//no checks, assumes connected for now, recursive
+int test_dfs(sgraph* g, int v, int* top) {
+	uint64_t e = g->v[v];
+	int v2;
+	while (e & (2ull << *top)-1) {
+		v2 = __builtin_ctz(e);
+		e &= e-1;
+		//back edge
+	}
+	while (e) {
+		v2 = __builtin_ctz(e);
+		//forward edge
+		(*top)++;
+		uint64_t a = g->v[v2];
+		g->v[v2] = g->v[*top];
+		g->v[*top] = a;
+		//SIMD later
+		const int step_size = 4;
+		for (size_t j = 0; j < g->n; j += step_size) {
+			for (size_t i = j; i < j+step_size; i++) {
+				uint64_t x = g->v[i] >> *top;
+				x ^= g->v[i] >> v2;
+				x &= 1ull;
+				g->v[i] ^= x << *top | x << v2;
+			}
+		}
+		test_dfs(g, v2, top);
+		e = g->v[v] >> v2 << v2;
+	}
 }
 
 void isort(size_t arr[], size_t len, dlow low[], size_t v0) {	//insertion sort for vertices (should switch to something faster (heap sort) when i can)
@@ -272,10 +303,7 @@ int counte(char* s, int len) {
 }
 
 int getg(FILE* fin, graph* g, char* s, int n) {
-	int len = (n*(n-1)/2+5)/6;
-	assert(fgets(s, len+2+7, fin));
-	s[len] = 0;
-	if (counte(s, len) > 3*n-6) return 0;
+	assert(fgets(s, n*(n-1)/12+3+7, fin));
 	//handle first character
 	char c = s[0]-0x3f;
 	if (c & 0x20) {
@@ -304,13 +332,16 @@ int getg(FILE* fin, graph* g, char* s, int n) {
 	}
 	//handle rest
 	size_t sci = 4, scj = 0;
-	for (size_t x = 1; x < len; x++) {
+	size_t emax = 6*n-12;
+	for (size_t x = 1;; x++) {
 		c = s[x]-0x3f;
 		size_t prev = scj;
 		scj %= sci;
 		sci += prev >= sci;
+		if (sci >= n) return 1;
 		while (c) {
-			int o = 5-fastlog(c & -c);
+			if (g->elen >= emax) return 0;
+			int o = 5-__builtin_ctz(c);
 			c &= c-1;
 			size_t i = sci + (scj+o >= sci);
 			size_t j = (scj + o) % sci;
@@ -319,7 +350,6 @@ int getg(FILE* fin, graph* g, char* s, int n) {
 		}
 		scj += 6;
 	}
-	return 1;
 }
 
 int getn(FILE* fin) {
@@ -332,7 +362,7 @@ int main() {
 	int n = getn(stdin);
 	size_t len = (n*(n-1)/2+5)/6;
 	char* s = malloc(len+2+7);
-	memset(s+len, 0, 8);
+	memset(s+len, 0x3f, 8);
 	graph g = {
 		malloc((6*n-12)*sizeof(edge)),
 		0,
@@ -353,12 +383,22 @@ int main() {
 		.v=malloc(n*sizeof(ds)),
 		.end=0
 	};
+	if (n < 4) {
+		scanf("%s ", s);
+		printf("%c%s\n", n+63, s);
+		while (!feof(stdin)) {
+			scanf("%s ", s);
+			printf("%s\n", s);
+		}
+		return 0;
+	}
 	while (!feof(stdin)) {
 		memset(g.v, 0, sizeof(vertex)*n);
 		g.elen = 0;
 		if (!getg(stdin, &g, s, n)) goto next;
 		memset(g2.v, 0, sizeof(vertex)*n);
 		g2.elen = 0;
+		g2.n = n;
 		if (!dfs(&g, low, ord, &g2, elp)) goto next;
 		sortg(&g2, low, ord);
 		memset(dss.c, 0, sizeof(constraint)*(3*n-6));
@@ -366,7 +406,8 @@ int main() {
 		dss.end = 0;
 		memset(elp, 0, sizeof(edge*)*n);
 		if (planarity1(&g2, &dss, low, elp)) {
-			printf("%c%s\n", n+63, s);
+			fputc(n+63, stdout);
+			fputs(s, stdout);
 		}
 next:
 		if (feof(stdin)) break;
