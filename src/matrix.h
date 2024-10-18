@@ -103,7 +103,7 @@ int getmat(FILE* fin, gmat* g, char* s, int n) {
 		_mm256_storeu_si256((__m256i*)&g2[i*8], a);
 		_mm256_storeu_si256((__m256i*)&g2[i*8+4], b);
 	}
-	for (size_t i = 0; i < 8; i++) {	//hopefully unroll, does only 8 words ATST, maybe improvable
+	for (size_t i = 0; i < 8; i++) {	//hopefully unroll, does only 8 words ATST
 		__m256i a = _mm256_lddqu_si256((__m256i*)&g2[i*8]);
 		__m256i b = _mm256_lddqu_si256((__m256i*)&g2[i*8+4]);
 		b = _mm256_permute4x64_epi64(b,0x4e);
@@ -124,8 +124,7 @@ int getmat(FILE* fin, gmat* g, char* s, int n) {
 		_mm256_storeu_si256((__m256i*)&g2[i*8], a);
 		_mm256_storeu_si256((__m256i*)&g2[i*8+4], b);
 	}
-	//TODO use mm256 to cut down on ops
-	for (size_t i = 0; i < 8; i++) {	//hopefully unroll, does only 8 words ATST, maybe improvable
+	for (size_t i = 0; i < 8; i++) {	//hopefully unroll, does only 8 words ATST
 		magic2(g2, i*8, i*8+4, 4, 0x0f0f0f0f0f0f0f0full);
 	}
 	for (size_t i = 0; i < 4; i++) {	//hopefully unroll

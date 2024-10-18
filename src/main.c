@@ -49,8 +49,9 @@ void sortg(graph* g, dlow low[], size_t buff[]) {
 	}
 }
 
-int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
-#define GETDS(X, Y) if ((X) < v) { 					\
+int planarity0(graph* g, dds* d, size_t v, dlow low[]) {	//better and simpler
+#define GETDS(X, Y) 							\
+	if ((X) < v) { 							\
 		d->c[d->end++] = (constraint){1ull << (X), (X), 0, 69}; \
 		Y = (ds){d->c+d->end-1, 1, (X)};			\
 	}								\
@@ -59,8 +60,7 @@ int planarity0(graph* g, dds* d, size_t v, dlow low[]) {
 		Y = d->v[X];						\
 	}
 
-	//should be impossible
-	if (g->v[v].start == NULL) {
+	if (g->v[v].start == NULL) {		//should be impossible
 		d->v[v] = (ds){d->c+d->end, 0, 69};
 	}
 	else if (g->v[v].start->next == NULL) {
@@ -200,7 +200,6 @@ int main() {
 		//g.elen = 0;
 		int e = getmat(stdin, g, s, n);
 		if (e > 3*n-6) {
-			eprintf("%c%s\n", n+63, s);
 			goto next;
 		}
 		if (e < 9) goto good;
