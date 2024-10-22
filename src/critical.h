@@ -149,7 +149,7 @@ int elim_dead(graph* g, size_t v) {
 	return 0;
 }
 
-//make a graph critical
+//make a graph co-tree critical (3-connected)
 //TODO: add labels to edges (to reconstruct the subgraph)
 void to_critical(graph* g, ehgraph* cg, size_t e1, size_t e2, uin64_t low1, uint64_t low2) {
 	uint64_t e = critical_set(cg, e1, e2, low1, low2);
