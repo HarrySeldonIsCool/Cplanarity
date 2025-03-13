@@ -15,11 +15,6 @@ typedef struct {
 	size_t n;
 } graph;
 
-typedef struct {
-	uint64_t v[64];
-	size_t n;
-} sgraph;
-
 #define CONCI(A, B) A ## B
 #define CONCAT(A, B) CONCI(A, B)
 #define FORV(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next) //predefine A
@@ -27,7 +22,6 @@ typedef struct {
 #define FORVP(A, V) for (edge* CONCAT(next, __LINE__) = V.start; CONCAT(next, __LINE__) && ((A = &CONCAT(next, __LINE__)->v) || 1); CONCAT(next, __LINE__) = CONCAT(next, __LINE__)->next)
 #define suppose(X) if (!(X)) return 0
 
-#define kk ?1:exit(__LINE__)
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
 inline void pushg(graph* g, size_t v, size_t v2) {

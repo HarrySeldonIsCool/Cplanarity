@@ -186,10 +186,10 @@ int main() {
 		.end=0
 	};
 	if (n < 5) {
-		scanf("%s ", s);
+		assert(scanf("%s ", s));
 		printf("%c%s\n", n+63, s);
 		while (!feof(stdin)) {
-			scanf("%s ", s);
+			assert(scanf("%s ", s));
 			printf("%s\n", s);
 		}
 		return 0;
@@ -208,6 +208,9 @@ int main() {
 		g2.n = n;
 		if (!matdfs(g, n, e, low, ord, &g2)) {
 			goto next;
+		}
+		if (g2.elen < g2.n+3) {
+			goto good;
 		}
 		sortg(&g2, low, ord);
 		memset(dss.c, 0, sizeof(constraint)*(3*n-6));

@@ -19,6 +19,7 @@ typedef struct {
 	int n;		//num edges in original graph
 } ehgraph;
 
+//use the same low1 and low2 for similarity
 void pushehg(ehgraph* g, size_t v, uint64_t v2, uint64_t low1, uint64_t low2) {
 	g->e[g->elen] = (ehedge) {
 		v2,
@@ -31,7 +32,7 @@ void pushehg(ehgraph* g, size_t v, uint64_t v2, uint64_t low1, uint64_t low2) {
 }
 
 
-//don't need to check for colors, just dfs the shortest path
+//don't need to check for colors, just dfs the shortest path (not actually the shortest, just one that cannot be shortcut)
 //burnt ground approach (leaves only The Path in the graph)
 //TODO switch to bfs (probably faster most of the time)
 size_t complete_cycle(ehgraph* g, size_t start, size_t end, size_t max_depth, uint64_t* exp) {
@@ -41,13 +42,14 @@ size_t complete_cycle(ehgraph* g, size_t start, size_t end, size_t max_depth, ui
 		if (e->e & 1ull << end) {
 			g->v[start].start = e;
 			e->e = 1ull << end;
+			*exp = ~0ull;
 			return 1;
 		}
 		if (max_depth == 1) return 2;
 		uint64_t mask = e->e;
 		while (mask = e->e & ~*exp) {
 			size_t v = __builtin_ctzll(mask);
-			size_t l = findcycle(g, v, end, max_depth-1, exp);
+			size_t l = complete_cycle(g, v, end, max_depth-1, exp);
 			if (l < max_depth) {
 				max_depth = l;
 				g->v[start].start = e;

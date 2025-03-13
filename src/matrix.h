@@ -184,7 +184,7 @@ int matdfs(gmat* g, int n, int e, dlow low[], size_t ord[], graph* g2) {
 		}
 		return;
 	}
-	int add = -1;
+	int add = 0;
 	for (size_t i = 0; i < n; i++) {
 		low[i] = (dlow){i, i};
 	}
@@ -197,7 +197,12 @@ int matdfs(gmat* g, int n, int e, dlow low[], size_t ord[], graph* g2) {
 		edges = g2->elen;
 		if (top && g[v0]) {
 			pushg(g2, 0, top);
-			add += 2;
+			add++;
+		}
+		if (!g[v0]) {
+			top--;
+			g2->n--;
+			continue;
 		}
 		dfs1(v0);
 		if (add+e > 3*n-6) return 0;
