@@ -63,6 +63,15 @@ int counte(char* s, int len) {
 	return e;
 }
 
+inline const size_t countev(uint64_t v) {
+	size_t e = 0;
+	while (v) {
+		v &= v-1;
+		e++;
+	}
+	return e;
+}
+
 int getmat(FILE* fin, gmat* g, char* s, int n) {
 	assert(fgets(s, n*(n-1)/12+3, fin));
 	s[(n*(n-1)/2+5)/6] = 0x3f;
@@ -135,10 +144,10 @@ int getmat(FILE* fin, gmat* g, char* s, int n) {
 		magic2(g2, i*4, i*4+16, 16, 0x0000ffff0000ffffull);
 		magic2(g2, i*4+32, i*4+48, 16, 0x0000ffff0000ffffull);
 	}
-	for (size_t i = 0; i < 8; i++) {	//hopefully unroll
+	if (n > 32) for (size_t i = 0; i < 8; i++) {	//hopefully unroll
 		magic2(g2, i*4, i*4+32, 32, 0x00000000ffffffffull);
 	}
-	for (size_t i = 0; i < 64; i++) {
+	for (size_t i = 0; i < n; i++) {
 		g[i] |= g2[i];
 	}
 	//printmat(g, n);
@@ -153,6 +162,8 @@ int matdfs(gmat* g, int n, int e, dlow low[], size_t ord[], graph* g2) {
 	void dfs1(int vi) {
 		gmat v = g[vi];
 		int ti = ord[vi];
+		g2->v[ti].start = &g2->e[g2->elen];
+		g2->elen += __builtin_popcountll(v);
 		for (gmat back = v & ~exp; back; back &= back-1) {
 			int vi2 = __builtin_ctzll(back);
 			int ti2 = ord[vi2];
@@ -193,10 +204,8 @@ int matdfs(gmat* g, int n, int e, dlow low[], size_t ord[], graph* g2) {
 		exp ^= 1ull << v0;
 		ord[v0] = ++top;
 		g2->v[top].par = 0;
-		int otop = top-1;
-		edges = g2->elen;
 		if (top && g[v0]) {
-			pushg(g2, 0, top);
+			pushg(g2, top-1, top);
 			add++;
 		}
 		if (!g[v0]) {

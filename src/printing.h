@@ -33,8 +33,8 @@ void printg(FILE* fout, graph* g) {
 	for (size_t v = 0; v < g->n; v++) {
 		size_t v2;
 		fprintf(fout, "%li: ", v);
-		FORV(v2, g->v[v]) {
-			fprintf(fout, "%li ", v2);
+		for (size_t i = 0; i < g->v[v].len; i++) {
+			fprintf(fout, "%li ", g->v[v].start[i]);
 		}
 		fprintf(fout, "\n");
 	}
