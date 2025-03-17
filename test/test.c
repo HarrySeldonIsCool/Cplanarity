@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "common.h"
-#include "matrix.h"
-#include "vlist.h"
-#include "buckets.h"
-#include "printing.h"
-
-int cmp_vlist_mat(gmat *g, graph* g2, int n) {
+//#include "common.h"
+//#include "matrix.h"
+//#include "vlist.h"
+//#include "buckets.h"
+//#include "printing.h"
+#include "pool.h"
+/*
+int cmp_vlist_mat(gmat *g, graph* g2, int *(int*)it->itn) {
 	for (size_t i = 0; i < n; i++) {
 		gmat x = g[i];
 		int v2;
@@ -88,10 +89,73 @@ void test_dfs() {
 	printf("\nvlist:\n");
 	printg(stdout, &g4);
 }
+*/
+void init_item(void** x) {
+	*x = malloc(sizeof(int));
+	*(int*)*x = 0;
+	return;
+}
+
+void destroy_item(void* x) {
+	free(x);
+}
+
+void* add2(void* pv) {
+	pool* p = pv;
+	const int stage = 0;
+	for (size_t i = 0; i < 4; i++) {
+		pool_item* it = get_item(p, stage);
+		if (*(int*)it->it >= 0) {
+			*(int*)it->it += 2;
+		}
+		release_item(p, it);
+	}
+	return NULL;
+}
+
+void* sub1(void* pv) {
+	pool* p = pv;
+	const int stage = 1;
+	for (size_t i = 0; i < 4; i++) {
+		pool_item* it = get_item(p, stage);
+		*(int*)it->it -= 3;
+		release_item(p, it);
+	}
+	return NULL;
+}
+
+void* print(void* pv) {
+	pool* p = pv;
+	const int stage = 2;
+	for (size_t i = 0; i < 4; i++) {
+		pool_item* it = get_item(p, stage);
+		printf("%i\n", *(int*)it->it);
+		set_stage(p, it, 0);
+		release_item(p, it);
+	}
+	return NULL;
+}
+
+void pool_test() {
+	pool p;
+	init_pool(&p, 3, 2, init_item);
+	pthread_t ad;
+	pthread_t su;
+	pthread_t pr;
+	pthread_create(&ad, NULL, add2, &p);
+	pthread_create(&su, NULL, sub1, &p);
+	pthread_create(&pr, NULL, print, &p);
+	pthread_join(ad, NULL);
+	pthread_join(su, NULL);
+	pthread_join(pr, NULL);
+	destroy_pool(&p, destroy_item);
+	return;
+}
 
 int main() {
-	test_parse();
+	/*test_parse();
 	test_ctz();
-	test_dfs();
+	test_dfs();*/
+	pool_test();
 	printf("success!\n");
 }
