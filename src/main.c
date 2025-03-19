@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+#include <errno.h>
 #include "buckets.h"
 #include "common.h"
 
@@ -80,7 +81,6 @@ int planarity0(graph* g, dds* d, size_t v, dlow low[]) {	//better and simpler
 
 int getn(FILE* fin) {
 	char n = getc(fin);
-	assert(n-63);
 	return n - 63;
 }
 
@@ -95,11 +95,12 @@ void* reader(void* pv) {
 		for (size_t i = 0; i < BATCH_SIZE; i++) {
 			char* s = &((char*)pi->it)[(len+9)*i];
 			assert(fgets(s, len+3, stdin));
+			getn(stdin);
 			if (feof(stdin)) {
+				memset(s+len+9, 0, (BATCH_SIZE-i-1)*(len+9));
 				release_item(p, pi);
 				goto end;
 			}
-			getn(stdin);
 		}
 		release_item(p, pi);
 	}
