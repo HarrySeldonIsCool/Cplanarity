@@ -73,7 +73,9 @@ inline const size_t countev(uint64_t v) {
 }
 
 int getmat(FILE* fin, gmat* g, char* s, int n) {
-	assert(fgets(s, n*(n-1)/12+3, fin));
+	if (fin != NULL) {
+		assert(fgets(s, n*(n-1)/12+3, fin));
+	}
 	s[(n*(n-1)/2+5)/6] = 0x3f;
 	s[(n*(n-1)/2+5)/6+1] = 0x3f;
 	int res = counte(s, n*(n-1)/12+3);
@@ -83,8 +85,7 @@ int getmat(FILE* fin, gmat* g, char* s, int n) {
 	int x = 0;
 	size_t o = 0;
 	for (int i = 0; i < n; i++) {
-		size_t j = 0;
-		for (; j < i+o; j += 6) {
+		for (size_t j = 0; j < i+o; j += 6) {
 			g[i] |= (uint64_t)rev_byte2(s[x]-0x3f) << j >> o;
 			x++;
 		}

@@ -103,21 +103,23 @@ void destroy_item(void* x) {
 void* add2(void* pv) {
 	pool* p = pv;
 	const int stage = 0;
-	for (size_t i = 0; i < 4; i++) {
+	for (size_t i = 0; i < 6; i++) {
 		pool_item* it = get_item(p, stage);
 		if (*(int*)it->it >= 0) {
 			*(int*)it->it += 2;
 		}
 		release_item(p, it);
 	}
+	kill_stage(p, stage);
 	return NULL;
 }
 
 void* sub1(void* pv) {
 	pool* p = pv;
 	const int stage = 1;
-	for (size_t i = 0; i < 4; i++) {
+	while (p->operational) {
 		pool_item* it = get_item(p, stage);
+		if (it == NULL) continue;
 		*(int*)it->it -= 3;
 		release_item(p, it);
 	}
@@ -127,10 +129,10 @@ void* sub1(void* pv) {
 void* print(void* pv) {
 	pool* p = pv;
 	const int stage = 2;
-	for (size_t i = 0; i < 4; i++) {
+	while (p->operational) {
 		pool_item* it = get_item(p, stage);
+		if (it == NULL) continue;
 		printf("%i\n", *(int*)it->it);
-		set_stage(p, it, 0);
 		release_item(p, it);
 	}
 	return NULL;
@@ -138,7 +140,7 @@ void* print(void* pv) {
 
 void pool_test() {
 	pool p;
-	init_pool(&p, 3, 2, init_item);
+	init_pool(&p, 3, 3, init_item);
 	pthread_t ad;
 	pthread_t su;
 	pthread_t pr;

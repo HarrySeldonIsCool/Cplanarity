@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <assert.h>
 
 typedef struct {
 	void* it;
@@ -13,6 +14,8 @@ typedef struct {
 	int* free;		//[stages]
 	pthread_cond_t* fc;	//[stages]
 	pthread_mutex_t main;	//neccessary because im bad
+	int operational;
+	uint64_t active;
 } pool;
 
 //Example usage:
@@ -27,6 +30,7 @@ typedef struct {
 
 //if you start using it before init you're a dumbass
 void init_pool(pool* p, int stages, int size, void (*init_item)(void**)) {
+	assert(stages < 64);
 	p->main = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_lock(&p->main);
 	p->its = malloc(size*sizeof(pool_item));
@@ -40,6 +44,8 @@ void init_pool(pool* p, int stages, int size, void (*init_item)(void**)) {
 	p->free = malloc(stages*sizeof(int));
 	p->free[0] = size;
 	p->fc = malloc(stages*sizeof(pthread_cond_t));
+	p->operational = size;
+	p->active = (1ull << stages) - 1;
 	pthread_mutex_unlock(&p->main);
 	return;
 }
@@ -64,12 +70,16 @@ void destroy_pool(pool* p, void (*destroy_item)(void*)) {
 	return;
 }
 
-//on sync failure returns NULL
+//on all items finished returns NULL
 //auto-increments stage
 pool_item* get_item(pool* p, int stage) {
 	pthread_mutex_lock(&p->main);
-	while (p->free[stage] == 0) {
+	while (p->free[stage] == 0 && p->operational) {
 		pthread_cond_wait(&p->fc[stage], &p->main);
+	}
+	if (!p->operational) {
+		pthread_mutex_unlock(&p->main);
+		return NULL;
 	}
 	for (size_t i = 0; i < p->size; i++) {
 		if (p->its[i].stage != stage) {
@@ -78,12 +88,13 @@ pool_item* get_item(pool* p, int stage) {
 		if (pthread_mutex_trylock(&p->its[i].lock)) {
 			continue;
 		}
-		p->free[p->its[i].stage]--;
+		p->free[stage]--;
 		p->its[i].stage++;
+		p->its[i].stage %= p->stages;
 		pthread_mutex_unlock(&p->main);
 		return &p->its[i];
 	}
-	return NULL; //unreachable hopefully
+	return NULL;	//unreachable
 }
 
 void release_item(pool* p, pool_item* pi) {
@@ -91,7 +102,16 @@ void release_item(pool* p, pool_item* pi) {
 	int stage = pi->stage;
 	pthread_mutex_unlock(&pi->lock);
 	p->free[stage]++;
-	pthread_cond_signal(&p->fc[stage]);
+	if ((p->active >> stage & 1ull) == 0) {
+		p->operational--;
+		if (!p->operational) {
+			for (size_t i = 0; i < p->stages; i++) {
+				pthread_cond_broadcast(&p->fc[i]);
+			}
+		}
+	} else {
+		pthread_cond_signal(&p->fc[stage]);
+	}
 	pthread_mutex_unlock(&p->main);
 	return;
 }
@@ -100,5 +120,12 @@ void release_item(pool* p, pool_item* pi) {
 void set_stage(pool* p, pool_item* pi, int stage) {
 	pthread_mutex_lock(&p->main);
 	pi->stage = stage;
+	pthread_mutex_unlock(&p->main);
+}
+
+void kill_stage(pool* p, int stage) {
+	pthread_mutex_lock(&p->main);
+	p->active ^= 1ull << stage;
+	p->operational -= p->free[stage];
 	pthread_mutex_unlock(&p->main);
 }
