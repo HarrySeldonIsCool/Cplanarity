@@ -55,22 +55,12 @@ int counte(char* s, int len) {
 	int e = 0;
 	for (size_t i = 0; 8*i < len; i++) {
 		uint64_t x = s2[i]-0x3f3f3f3f3f3f3f3full;
-		while (x) {
-			x &= x-1;
-			e++;
-		}
+		e += _mm_popcnt_u64(x);
 	}
 	return e;
 }
 
-inline const size_t countev(uint64_t v) {
-	size_t e = 0;
-	while (v) {
-		v &= v-1;
-		e++;
-	}
-	return e;
-}
+#define countev(X) _mm_popcnt_u64(X)
 
 int getmat(FILE* fin, gmat* g, char* s, int n) {
 	if (fin != NULL) {
@@ -164,7 +154,7 @@ int matdfs(gmat* g, int n, int e, dlow low[], size_t ord[], graph* g2) {
 		gmat v = g[vi];
 		int ti = ord[vi];
 		g2->v[ti].start = &g2->e[g2->elen];
-		g2->elen += __builtin_popcountll(v);
+		g2->elen += countev(v);
 		for (gmat back = v & ~exp; back; back &= back-1) {
 			int vi2 = __builtin_ctzll(back);
 			int ti2 = ord[vi2];
